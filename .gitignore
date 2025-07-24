@@ -1,3 +1,4 @@
 .idea/
 venv/
-__pycache__/*
+lora/__pycache__/*
+dataset/__pycache__/
