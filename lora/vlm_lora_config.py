@@ -1,6 +1,6 @@
 from typing import Optional, List
 
-from lora.LoRAConfig import LoRAConfig
+from lora.lora_config import LoRAConfig
 
 
 class VLMLoRAConfig(LoRAConfig):

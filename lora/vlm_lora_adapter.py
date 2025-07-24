@@ -3,8 +3,8 @@ from typing import List, Dict, Any
 import torch
 import torch.nn as nn
 
-from lora.LoRAConfig import LoRAConfig
-from lora.LoRALinear import LoRALinear
+from lora.lora_config import LoRAConfig
+from lora.lora_linear import LoRALinear
 
 
 class VLMLoRAAdapter:
@@ -25,6 +25,10 @@ class VLMLoRAAdapter:
         self.config = config
         self.adapted_modules = {}
         self.original_modules = {}
+        
+        print(f"LoRA Adapter initialized with target modules: {self.config.target_modules}")
+        print(f"LoRA rank: {self.config.r}")
+        print(f"LoRA alpha: {self.config.lora_alpha}")
 
     def apply_lora(self, model: nn.Module, module_name: str = "") -> nn.Module:
         """
@@ -40,8 +44,12 @@ class VLMLoRAAdapter:
         for name, module in model.named_children():
             full_name = f"{module_name}.{name}" if module_name else name
 
+            if isinstance(module, nn.Linear):
+                print(f"Found linear module: {full_name}")
+
             # Check if this module should be adapted
             if self._should_adapt_module(full_name, module):
+
                 # Replace with LoRA version
                 lora_module = self._create_lora_module(module)
                 setattr(model, name, lora_module)
@@ -75,6 +83,7 @@ class VLMLoRAAdapter:
         # Check if module name matches target patterns
         for target in self.config.target_modules:
             if target in module_name:
+                print(f"Matched module '{module_name}' with target pattern '{target}'")
                 return True
 
         return False
@@ -89,6 +98,12 @@ class VLMLoRAAdapter:
         Returns:
             LoRA-adapted linear module
         """
+        # Get the dtype and device from the original module
+        original_dtype = original_module.weight.dtype
+        original_device = original_module.weight.device
+        
+        print(f"Creating LoRA module for {original_module.weight.shape} with dtype {original_dtype} on device {original_device}")
+        
         # Create LoRA module with same dimensions
         lora_module = LoRALinear(
             in_features=original_module.in_features,
@@ -99,11 +114,29 @@ class VLMLoRAAdapter:
             bias=original_module.bias is not None,
             merge_weights=self.config.merge_weights
         )
+        
+        # Move LoRA module to the same device and dtype as original
+        lora_module = lora_module.to(original_device).to(original_dtype)
 
-        # Copy original weights
-        lora_module.linear.weight.data = original_module.weight.data.clone()
-        if original_module.bias is not None:
-            lora_module.linear.bias.data = original_module.bias.data.clone()
+        # Copy original weights with proper type handling
+        try:
+            lora_module.linear.weight.data = original_module.weight.data.clone()
+            if original_module.bias is not None:
+                lora_module.linear.bias.data = original_module.bias.data.clone()
+        except Exception as e:
+            print(f"Error copying weights: {e}")
+            print(f"Original weight dtype: {original_module.weight.dtype}, device: {original_module.weight.device}")
+            print(f"LoRA weight dtype: {lora_module.linear.weight.dtype}, device: {lora_module.linear.weight.device}")
+            raise
+
+        print(f"- Original weight: {original_module.weight.shape}")
+        print(f"- LoRA weight: {lora_module.linear.weight.shape}")
+        
+        # Ensure LoRA components are properly initialized
+        if hasattr(lora_module, 'lora_A') and lora_module.lora_A is not None:
+            print(f"- lora_A weight: {lora_module.lora_A.weight.shape}")
+        if hasattr(lora_module, 'lora_B') and lora_module.lora_B is not None:
+            print(f"- lora_B weight: {lora_module.lora_B.weight.shape}")
 
         return lora_module
 
@@ -198,12 +231,24 @@ class VLMLoRAAdapter:
         print(f"Total parameters: {param_info['total_parameters']:,}")
         print(f"Trainable parameters: {param_info['trainable_parameters']:,}")
         print(f"LoRA parameters: {param_info['lora_parameters']:,}")
-        print(f"Trainable percentage: {param_info['trainable_percentage']:.2f}%")
+        print(f"Trainable percentage: {param_info['trainable_percentage']:.4f}%")
         print(f"Adapted modules: {len(self.adapted_modules)}")
         print(f"Target modules: {self.config.target_modules}")
         print(f"LoRA rank: {self.config.r}")
         print(f"LoRA alpha: {self.config.lora_alpha}")
         print(f"LoRA dropout: {self.config.lora_dropout}")
+        
+        # Show which modules were actually adapted
+        if self.adapted_modules:
+            print(f"\nAdapted module names:")
+            for module_name in self.adapted_modules.keys():
+                print(f"  - {module_name}")
+        
+        # Show parameter efficiency
+        if param_info['total_parameters'] > 0:
+            efficiency = param_info['total_parameters'] / param_info['trainable_parameters']
+            print(f"\nParameter efficiency: {efficiency:.1f}x (only {param_info['trainable_percentage']:.4f}% of parameters are trainable)")
+        
         print("=" * 50)
 
 

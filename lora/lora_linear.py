@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-from lora.LoRALayer import LoRALayer
+from lora.lora_layer import LoRALayer
 
 
 class LoRALinear(LoRALayer):
@@ -66,22 +66,27 @@ class LoRALinear(LoRALayer):
         Returns:
             Output tensor with LoRA adaptation applied
         """
+        # Ensure input has the same dtype as the linear layer
+        target_dtype = self.linear.weight.dtype
+        x = x.to(target_dtype)
+        
         # Original linear transformation
         result = self.linear(x)
 
         # Add LoRA adaptation if rank > 0
-        if self.r > 0 and not self.merged:
+        if self.r > 0 and not self.merged and self.lora_A is not None and self.lora_B is not None:
             # LoRA forward: x -> A -> dropout -> B -> scale
             lora_result = self.lora_A(x)
             lora_result = self.lora_dropout_layer(lora_result)
             lora_result = self.lora_B(lora_result)
+
             result = result + lora_result * self.scaling
 
         return result
 
     def merge_weights(self):
         """Merge LoRA weights with original weights for inference efficiency."""
-        if self.r > 0 and not self.merged:
+        if self.r > 0 and not self.merged and self.lora_A is not None and self.lora_B is not None:
             # Compute ΔW = B @ A
             delta_weight = (self.lora_B.weight @ self.lora_A.weight) * self.scaling
 
@@ -91,7 +96,7 @@ class LoRALinear(LoRALayer):
 
     def unmerge_weights(self):
         """Unmerge LoRA weights from original weights."""
-        if self.r > 0 and self.merged:
+        if self.r > 0 and self.merged and self.lora_A is not None and self.lora_B is not None:
             # Compute ΔW = B @ A
             delta_weight = (self.lora_B.weight @ self.lora_A.weight) * self.scaling
 

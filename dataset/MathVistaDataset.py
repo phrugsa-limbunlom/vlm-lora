@@ -188,11 +188,26 @@ class MathVistaDataset(Dataset):
         question = str(question)
         answer = str(answer)
 
-        # Process image
+        # Process image - ensure we have a valid image
         image = self._get_item_value(item, 'decoded_image')
         if image is None:
-            # Create a dummy image if no image is available
-            image = Image.new('RGB', (336, 336), color=(255, 255, 255))
+            # Create a proper dummy image for LLaVA
+            from PIL import Image
+            image = Image.new('RGB', (336, 336), color=(128, 128, 128))  # Gray image
+            print(f"Created dummy image for sample {idx}")
+
+        # Ensure image is PIL Image
+        if not isinstance(image, Image.Image):
+            try:
+                if hasattr(image, 'convert'):
+                    image = image.convert('RGB')
+                else:
+                    # Create dummy image if conversion fails
+                    image = Image.new('RGB', (336, 336), color=(128, 128, 128))
+                    print(f"Converted image to PIL for sample {idx}")
+            except Exception as e:
+                print(f"Image conversion failed for sample {idx}: {e}")
+                image = Image.new('RGB', (336, 336), color=(128, 128, 128))
 
         # Create conversation format for LLaVA
         conversation = [
@@ -208,41 +223,50 @@ class MathVistaDataset(Dataset):
 
         # Process with LLaVA processor
         if self.processor is not None:
-            # Apply chat template
-            text_prompt = self.processor.apply_chat_template(conversation, tokenize=False, add_generation_prompt=False)
+            try:
+                # Apply chat template
+                text_prompt = self.processor.apply_chat_template(conversation, tokenize=False, add_generation_prompt=False)
 
-            # Process image and text
-            inputs = self.processor(
-                text=text_prompt,
-                images=image,
-                return_tensors="pt",
-                padding=True,
-                truncation=True,
-                max_length=512
-            )
+                # Process image and text
+                inputs = self.processor(
+                    text=text_prompt,
+                    images=image,
+                    return_tensors="pt",
+                    padding=True,
+                    truncation=True,
+                    max_length=512
+                )
 
-            # Extract processed data
-            input_ids = inputs["input_ids"].squeeze(0)
-            attention_mask = inputs["attention_mask"].squeeze(0)
-            pixel_values = inputs["pixel_values"].squeeze(0)
+                # Extract processed data
+                input_ids = inputs["input_ids"].squeeze(0)
+                attention_mask = inputs["attention_mask"].squeeze(0)
+                pixel_values = inputs["pixel_values"].squeeze(0)
 
-            return {
-                'input_ids': input_ids,
-                'attention_mask': attention_mask,
-                'pixel_values': pixel_values,
-                'labels': input_ids.clone(),  # For language modeling
-                'question': question,
-                'answer': answer,
-                'metadata': self._get_item_value(item, 'metadata') or {}
-            }
+                return {
+                    'input_ids': input_ids,
+                    'attention_mask': attention_mask,
+                    'pixel_values': pixel_values,
+                    'labels': input_ids.clone(),  # For language modeling
+                    'question': question,
+                    'answer': answer,
+                    'metadata': self._get_item_value(item, 'metadata') or {}
+                }
+            except Exception as e:
+                print(f"Processor failed for sample {idx}: {e}")
+                # Fallback to simple processing
+                return self._create_fallback_sample(question, answer, item)
         else:
             # Fallback to simple processing
-            return {
-                'input_ids': torch.tensor([1, 2, 3], dtype=torch.long),  # Dummy
-                'attention_mask': torch.tensor([1, 1, 1], dtype=torch.long),
-                'pixel_values': torch.randn(3, 336, 336),  # Dummy
-                'labels': torch.tensor([1, 2, 3], dtype=torch.long),
-                'question': question,
-                'answer': answer,
-                'metadata': self._get_item_value(item, 'metadata') or {}
-            }
+            return self._create_fallback_sample(question, answer, item)
+    
+    def _create_fallback_sample(self, question: str, answer: str, item: Dict[str, Any]) -> Dict[str, Union[torch.Tensor, str, Dict[str, Any]]]:
+        """Create a fallback sample when processor is not available."""
+        return {
+            'input_ids': torch.tensor([1, 2, 3], dtype=torch.long),  # Dummy
+            'attention_mask': torch.tensor([1, 1, 1], dtype=torch.long),
+            'pixel_values': torch.randn(3, 336, 336),  # Dummy
+            'labels': torch.tensor([1, 2, 3], dtype=torch.long),
+            'question': question,
+            'answer': answer,
+            'metadata': self._get_item_value(item, 'metadata') or {}
+        }

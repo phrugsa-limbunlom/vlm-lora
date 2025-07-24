@@ -33,7 +33,7 @@ class LoRALayer(nn.Module):
         self.r = r
         self.lora_alpha = lora_alpha
         self.lora_dropout = lora_dropout
-        self.merge_weights = merge_weights
+        self.merge_weights_param = merge_weights
         self.merged = False
 
         # Dropout layer for LoRA

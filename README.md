@@ -28,7 +28,16 @@ pip3 install torch torchvision torchaudio --index-url https://download.pytorch.o
 - `accelerate>=0.20.0` - HuggingFace accelerate for distributed training
 - `wandb>=0.15.0` - Weights & Biases for experiment tracking
 
-**Note**: If bitsandbytes installation fails, the code will automatically fall back to loading without quantization. This will use more memory but still work.
+**Note**: If bitsandbytes installation fails, the code will automatically fall back to loading without quantization. This will use more memory but still work. Make sure to install PyTorch with CUDA support.
+
+To test whether PyTorch has CUDA support
+
+```python
+import torch
+
+print(f"CUDA available: {torch.cuda.is_available()}")
+print(f"CUDA version: {torch.version.cuda}")
+```
 
 ## 🏗️ Architecture
 

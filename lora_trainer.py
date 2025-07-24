@@ -16,7 +16,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 import wandb
 
-from lora.VLMLoRAAdapter import VLMLoRAAdapter
+from lora.vlm_lora_adapter import VLMLoRAAdapter
 
 
 class LoRATrainer:
