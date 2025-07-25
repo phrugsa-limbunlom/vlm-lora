@@ -114,6 +114,12 @@ class VLMLoRAAdapter:
             bias=original_module.bias is not None,
             merge_weights=self.config.merge_weights
         )
+
+        # Forward pass one time
+        print("========Test forward pass========")
+        x = torch.randn(3, lora_module.in_features)
+        print("- input shape: ", x.shape)
+        lora_module.forward(x)
         
         # Move LoRA module to the same device and dtype as original
         lora_module = lora_module.to(original_device).to(original_dtype)
@@ -131,12 +137,6 @@ class VLMLoRAAdapter:
 
         print(f"- Original weight: {original_module.weight.shape}")
         print(f"- LoRA weight: {lora_module.linear.weight.shape}")
-        
-        # Ensure LoRA components are properly initialized
-        if hasattr(lora_module, 'lora_A') and lora_module.lora_A is not None:
-            print(f"- lora_A weight: {lora_module.lora_A.weight.shape}")
-        if hasattr(lora_module, 'lora_B') and lora_module.lora_B is not None:
-            print(f"- lora_B weight: {lora_module.lora_B.weight.shape}")
 
         return lora_module
 

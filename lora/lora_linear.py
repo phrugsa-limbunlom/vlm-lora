@@ -45,7 +45,11 @@ class LoRALinear(LoRALayer):
         # LoRA components
         if r > 0:
             self.lora_A = nn.Linear(in_features, r, bias=False)
+            print("- lora_A layer: ", self.lora_A)
+            print("- lora_A weight shape: ", self.lora_A.weight.shape)
             self.lora_B = nn.Linear(r, out_features, bias=False)
+            print("- lora_B layer: ", self.lora_B)
+            print("- lora_B weight shape: ", self.lora_B.weight.shape)
             self.scaling = self.lora_alpha / self.r
 
             # Initialize parameters
@@ -77,9 +81,12 @@ class LoRALinear(LoRALayer):
         if self.r > 0 and not self.merged and self.lora_A is not None and self.lora_B is not None:
             # LoRA forward: x -> A -> dropout -> B -> scale
             lora_result = self.lora_A(x)
+            print("- XA Shape: ", lora_result.shape)
             lora_result = self.lora_dropout_layer(lora_result)
             lora_result = self.lora_B(lora_result)
+            print("- BA Shape: ", lora_result.shape)
 
+            # Merge weight with original weight
             result = result + lora_result * self.scaling
 
         return result
