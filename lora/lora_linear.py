@@ -86,7 +86,7 @@ class LoRALinear(LoRALayer):
             lora_result = self.lora_B(lora_result)
             print("- BA Shape: ", lora_result.shape)
 
-            # Merge weight with original weight
+            # Apply LoRA weight to original weight
             result = result + lora_result * self.scaling
 
         return result
