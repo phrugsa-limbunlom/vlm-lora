@@ -2,6 +2,8 @@
 
 LoRA (Low-Rank Adaptation) implementation for Vision Language Models using LLaVA-1.5-7B. Focuses on LoRA setup, demonstrations, and testing.
 
+📚 This repository is a part of article: [LoRA in Vision Language Models: Efficient Fine-tuning with LLaVA](https://medium.com/@phrugsa-limbunlom/lora-in-vision-language-models-efficient-fine-tuning-with-llava-c8948674d855)
+
 ## 🚀 Features
 
 - **LLaVA Integration**: LLaVA-1.5-7B with 4-bit quantization
