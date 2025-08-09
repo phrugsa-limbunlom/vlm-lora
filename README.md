@@ -8,8 +8,8 @@ LoRA (Low-Rank Adaptation) implementation for Vision Language Models using LLaVA
 
 - **LLaVA Integration**: LLaVA-1.5-7B with 4-bit quantization
 - **LoRA Setup**: Complete LoRA adapter for VLM models
-- **Memory Efficient**: ~8GB VRAM (vs 28GB original)
-- **Testing Suite**: Comprehensive component tests
+- **Memory Efficient**: ~8GB VRAM (vs 28GB original) with quantization
+- **Log Analysis**: Comprehensive log set up to track progress
 
 ## 📦 Installation
 
