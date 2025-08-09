@@ -55,15 +55,6 @@ python main.py --no-training
 └── requirements.txt
 ```
 
-## 🧪 Testing
-
-```bash
-python test_lora_dtype_fix.py
-python test_gpu_usage.py
-python test_device_mapping.py
-python test_memory_allocation.py
-```
-
 ## 🔧 Configuration
 
 ```python
@@ -75,12 +66,6 @@ config = VLMLoRAConfig(
     adapt_language=True      # Adapt language model
 )
 ```
-
-## 📊 Performance
-
-- **Memory**: 8GB VRAM (vs 28GB original)
-- **Parameters**: ~1.5% trainable (LoRA only)
-- **Speed**: 2-3x faster with 4-bit quantization
 
 ## 🚨 Requirements
 
